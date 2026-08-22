@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { GoogleGenAI } from '@google/genai';
+import { callGroq } from '@/../lib/groq/client';
 
 const prisma = new PrismaClient();
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL_NAME = 'gemini-3.6-flash';
 
 export async function POST(request) {
   try {
@@ -46,14 +44,13 @@ WARNING: You must properly escape all internal double quotes inside string value
 }
 `;
 
-    const response = await ai.models.generateContent({
-      model: MODEL_NAME,
-      contents: prompt,
-      config: { temperature: 0.3, responseMimeType: "application/json" }
-    });
+    const responseText = await callGroq(
+      "You are the Sentinel Intelligence Core.",
+      prompt,
+      true // JSON Mode
+    );
 
-    const text = (response.text || '').replace(/```json/gi, '').replace(/```/g, '').trim();
-    const data = JSON.parse(text);
+    const data = JSON.parse(responseText);
 
     return NextResponse.json({ categories: data.categories });
   } catch (error) {

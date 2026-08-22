@@ -2,6 +2,7 @@ const WebSocket = require('ws');
 const readline = require('readline');
 const { execSync } = require('child_process');
 const fs = require('fs');
+const path = require('path');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -112,8 +113,18 @@ function executeCapability(capability, args) {
       return { content: content.substring(0, 50000) };
     case 'write_file':
       if (!args || !args.filePath || args.content === undefined) throw new Error("Missing filePath or content argument");
-      fs.writeFileSync(args.filePath, args.content, 'utf-8');
-      return { message: 'File written successfully' };
+      
+      const sandboxDir = path.join(process.cwd(), '.sentinel_sandbox');
+      if (!fs.existsSync(sandboxDir)) {
+        fs.mkdirSync(sandboxDir, { recursive: true });
+      }
+
+      // Prevent directory traversal
+      const safeBasename = path.basename(args.filePath);
+      const safePath = path.join(sandboxDir, safeBasename);
+
+      fs.writeFileSync(safePath, args.content, 'utf-8');
+      return { message: `File written securely to sandbox: ${safePath}` };
     case 'inspect_tools':
       return { tools: ['order_lookup', 'refund_request', 'escalation'] };
     case 'inspect_runtime':

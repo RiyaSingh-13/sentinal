@@ -64,6 +64,9 @@ export async function POST(request) {
           status: 'VALIDATED'
         }
       });
+      
+      // Small artificial delay to avoid bursting Gemini Free Tier limit
+      await new Promise(r => setTimeout(r, 2000));
     }
 
     // Re-fetch all findings for the report
@@ -72,7 +75,7 @@ export async function POST(request) {
       include: { execution: { include: { testSpec: true } } }
     });
 
-    // 2. Generate Final Report
+    // 2. Generate Final Report. Format the final report in clean HTML. Use tags like <h2>, <h3>, <ul>, <li>, <strong>, and proper <table> tags for tabular data. Do NOT use markdown.
     const reportMarkdown = await generateFinalReport(project, allFindings);
 
     return NextResponse.json({ 

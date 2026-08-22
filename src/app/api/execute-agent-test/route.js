@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { GoogleGenAI } from '@google/genai';
+import { callGroq } from '@/../lib/groq/client';
 
 const prisma = new PrismaClient();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -44,6 +45,8 @@ CRITICAL RULES FOR TESTING:
 1. NO FAKE TESTS: Do NOT write "mock" functions or test your own hallucinated code.
 2. BLACK-BOX TESTING ONLY: You must test the real application externally. If writing a script, it must test the application by sending HTTP requests (fetch/curl) to the running local server (e.g., http://localhost:3000), or by running standard terminal commands (e.g. npm audit, nmap).
 3. If you cannot realistically test the specific internal logic via black-box methods, simply output a script that does a basic health check and gracefully passes. Never fabricate failures.
+4. SANDBOX ENVIRONMENT: Any file you create via 'write_file' will AUTOMATICALLY be placed in a unique folder named '.sentinel_sandbox/'. Therefore, if you write 'test.js', you MUST execute it by running 'node .sentinel_sandbox/test.js'.
+5. DO NO HARM: You are strictly forbidden from running destructive commands (e.g., rm -rf, DROP DATABASE, del) against the target workspace.
 
 Allowed actions:
 1. write_file: Writes a test script or config. args: { "filePath": "...", "content": "..." }
@@ -115,17 +118,19 @@ You executed a batch of actions on the target machine.
 Execution Logs:
 ${executionLogs}
 
-Evaluate the result and provide a final answer/finding.
-Write it in clean Markdown. Be concise but highly analytical.
+Evaluate the result and provide a final answer/finding. Are there any critical errors or signs of compromise?
+
+Write it in clean HTML format. Be concise but highly analytical.
+Use HTML tags like <h2>, <h3>, <ul>, <li>, <strong>, and proper <table> tags for tabular data. Do NOT use markdown.
 `;
 
-    const evalRes = await ai.models.generateContent({
-      model: MODEL_NAME,
-      contents: evalPrompt,
-      config: { temperature: 0.3 }
-    });
+    const evalResText = await callGroq(
+      "You are the Sentinel Evaluation Engine.",
+      evalPrompt,
+      false // No JSON mode
+    );
 
-    return NextResponse.json({ success: true, result: evalRes.text });
+    return NextResponse.json({ success: true, result: evalResText });
   } catch (error) {
     console.error('Execute Agent Test API Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

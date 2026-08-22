@@ -37,52 +37,62 @@ export default function Home() {
   }
 
   return (
-    <main style={{ maxWidth: '600px', margin: '4rem auto', padding: '0 1rem', textAlign: 'center' }}>
-      <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>SENTINEL</h1>
-      <p style={{ color: 'var(--foreground)', opacity: 0.8, marginBottom: '3rem' }}>
-        Find where your AI project fails.
-      </p>
+    <main style={{ maxWidth: '600px', margin: '4rem auto', padding: '0 1rem' }}>
+      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+        <h1 style={{ fontSize: '2.5rem', letterSpacing: '-0.05em', color: 'var(--foreground)', marginBottom: '0.5rem' }}>SENTINEL</h1>
+        <p style={{ color: 'var(--muted-text)', fontSize: '1.1rem' }}>
+          Enterprise Security & Architecture Auditor
+        </p>
+      </div>
 
-      <form onSubmit={handleAnalyze} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-            Live Project URL
-          </label>
-          <input 
-            type="url" 
-            name="url" 
-            placeholder="https://your-project.com" 
-            required 
-          />
-        </div>
-        
-        <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-            GitHub Repository
-          </label>
-          <input 
-            type="url" 
-            name="github" 
-            placeholder="https://github.com/user/repo" 
-            required 
-          />
-        </div>
-        
-        {error && <p style={{ color: 'var(--danger)' }}>{error}</p>}
-        
-        <button 
-          type="submit" 
-          disabled={loading}
-          style={{ 
-            marginTop: '1rem', 
-            padding: '1rem', 
-            fontSize: '1.1rem',
-            opacity: loading ? 0.7 : 1
-          }}
-        >
-          {loading ? 'ANALYZING...' : 'ANALYZE PROJECT'}
-        </button>
-      </form>
+      <div className="card">
+        <form onSubmit={handleAnalyze} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--muted-text)' }}>
+              LIVE PROJECT URL
+            </label>
+            <input 
+              type="url" 
+              name="url" 
+              placeholder="https://your-project.com" 
+              required 
+            />
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--muted-text)' }}>
+              GITHUB REPOSITORY
+            </label>
+            <input 
+              type="url" 
+              name="github" 
+              placeholder="https://github.com/user/repo" 
+              required 
+            />
+          </div>
+          
+          {error && (
+            <div className="badge badge-danger" style={{ display: 'flex', padding: '0.75rem', borderRadius: '6px', backgroundColor: 'var(--danger-muted)' }}>
+              {error}
+            </div>
+          )}
+          
+          <button 
+            type="submit" 
+            disabled={loading}
+            style={{ marginTop: '1rem', width: '100%', padding: '1rem' }}
+          >
+            {loading ? (
+              <>
+                <span className="spinner spinner-primary" style={{ borderTopColor: 'white' }}></span>
+                INITIALIZING AUDIT...
+              </>
+            ) : (
+              'BEGIN AUDIT'
+            )}
+          </button>
+        </form>
+      </div>
     </main>
   );
 }
