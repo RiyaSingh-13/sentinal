@@ -79,6 +79,10 @@ WARNING: You must properly escape all internal double quotes inside string value
     for (let i = 0; i < plan.actions.length; i++) {
       const step = plan.actions[i];
       
+      // 4. Send script to the internal broker running on the same server
+      const port = process.env.PORT || 3000;
+      const executeUrl = `http://localhost:${port}/execute`;
+      
       const reqRecord = await prisma.permissionRequest.create({
         data: {
           sessionId: session.id,
