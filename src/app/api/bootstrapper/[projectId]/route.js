@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
 
-export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const projectId = searchParams.get('projectId');
-  const wsUrl = searchParams.get('wsUrl');
-  const baseUrl = searchParams.get('baseUrl');
-
-  if (!projectId || !wsUrl || !baseUrl) {
-    return new NextResponse('Missing parameters', { status: 400 });
+export async function GET(request, { params }) {
+  const resolvedParams = await params;
+  const projectId = resolvedParams.projectId;
+  
+  if (!projectId) {
+    return new NextResponse('Missing project ID', { status: 400 });
   }
+
+  // Determine base URLs dynamically from the request headers
+  const host = request.headers.get('host') || '127.0.0.1:3000';
+  const protocol = request.headers.get('x-forwarded-proto') || 'http';
+  
+  const baseUrl = `${protocol}://${host}`;
+  const wsUrl = protocol === 'https' ? `wss://${host}/agent` : `ws://${host}/agent`;
 
   const script = `
 const fs = require('fs');
@@ -36,7 +41,7 @@ async function bootstrap() {
   // 2. Fetch the core agent logic
   console.log('[Sentinel Bootstrapper] Downloading Agent Core...');
   const res = await fetch(BASE_URL + '/agent-client.js');
-  if (!res.ok) throw new Error('Failed to download agent logic');
+  if (!res.ok) throw new Error('Failed to download agent logic from ' + BASE_URL);
   const code = await res.text();
   fs.writeFileSync('client.js', code);
 

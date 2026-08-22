@@ -28,13 +28,17 @@ export default function TestExecution({ projectId, initialTestSpecs }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId })
       })
-      .then(res => res.json())
-      .then(data => {
+      .then(res => res.json().then(data => ({ res, data })))
+      .then(({ res, data }) => {
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to fetch suggestions');
+        }
         if (data.categories) setCategories(data.categories);
         setCategoriesLoading(false);
       })
       .catch(err => {
         console.error("Failed to load categories:", err);
+        setDeepError("AI Suggestion Error: " + err.message);
         setCategoriesLoading(false);
       });
     }
@@ -182,9 +186,18 @@ export default function TestExecution({ projectId, initialTestSpecs }) {
                   <button 
                     onClick={() => {
                       setCategoriesLoading(true);
+                      setDeepError(null);
                       fetch('/api/suggest-deep-tests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId }) })
-                        .then(res => res.json()).then(data => { if (data.categories) setCategories(data.categories); setCategoriesLoading(false); })
-                        .catch(() => setCategoriesLoading(false));
+                        .then(res => res.json().then(data => ({ res, data })))
+                        .then(({ res, data }) => { 
+                          if (!res.ok) throw new Error(data.error || 'Failed');
+                          if (data.categories) setCategories(data.categories); 
+                          setCategoriesLoading(false); 
+                        })
+                        .catch((err) => {
+                          setDeepError("AI Suggestion Error: " + err.message);
+                          setCategoriesLoading(false);
+                        });
                     }}
                     style={{ background: 'transparent', color: 'var(--primary)', boxShadow: 'none', padding: '0.25rem 0.5rem', fontSize: '0.85rem' }}
                   >

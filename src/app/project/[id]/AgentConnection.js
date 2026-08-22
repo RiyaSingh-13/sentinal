@@ -5,11 +5,13 @@ import { useState, useEffect } from 'react';
 export default function AgentConnection({ projectId }) {
   const [status, setStatus] = useState({ isConnected: false, session: null });
   const [loadingReq, setLoadingReq] = useState(false);
-  const [host, setHost] = useState('localhost:3000');
+  const [host, setHost] = useState('');
   const [protocol, setProtocol] = useState('http:');
+  const [customHost, setCustomHost] = useState('');
 
   useEffect(() => {
-    setHost(window.location.host);
+    let currentHost = window.location.host;
+    setHost(currentHost);
     setProtocol(window.location.protocol);
 
     const fetchStatus = async () => {
@@ -87,10 +89,21 @@ export default function AgentConnection({ projectId }) {
           
 
 
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--muted-text)', marginBottom: '0.5rem' }}>Admin Host Override (e.g. 192.168.0.100:3000)</label>
+            <input 
+              type="text" 
+              placeholder={host} 
+              value={customHost} 
+              onChange={e => setCustomHost(e.target.value)}
+              style={{ width: '100%', padding: '0.5rem', background: '#000', border: '1px solid var(--surface-border)', color: 'var(--foreground)', borderRadius: '4px' }}
+            />
+          </div>
+
           <div style={{ backgroundColor: '#000', padding: '1.25rem', borderRadius: '6px', border: '1px solid var(--surface-border)', position: 'relative' }}>
             <span style={{ position: 'absolute', top: '-10px', left: '12px', backgroundColor: 'var(--surface)', padding: '0 8px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', border: '1px solid var(--surface-border)', borderRadius: '4px' }}>Zero-Dependency Bootstrapper</span>
             <code style={{ color: 'var(--foreground)', userSelect: 'all', display: 'block', wordBreak: 'break-all', fontSize: '0.85rem', fontFamily: 'monospace' }}>
-              node -e "fetch('{protocol}//{host}/api/bootstrapper?projectId={projectId}&baseUrl={protocol}//{host}&wsUrl={protocol === 'https:' ? 'wss:' : 'ws:'}//{host}/agent').then(r=&gt;r.text()).then(t=&gt;eval(t))"
+              node -e "fetch('{protocol}//{customHost ? (customHost.includes(':') ? customHost : customHost + ':3000') : host}/api/bootstrapper/{projectId}').then(r=&gt;r.text()).then(t=&gt;eval(t))"
             </code>
           </div>
           

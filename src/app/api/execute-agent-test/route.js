@@ -72,12 +72,22 @@ WARNING: You must properly escape all internal double quotes inside string value
     });
     
     let planText = (planRes.text || '').replace(/```json/gi, '').replace(/```/g, '').trim();
-    const plan = JSON.parse(planText);
+    let plan = {};
+    try {
+      plan = JSON.parse(planText);
+    } catch(e) {
+      return NextResponse.json({ error: 'AI failed to generate a valid test plan.' }, { status: 500 });
+    }
+
+    const actions = Array.isArray(plan) ? plan : (plan.actions || []);
+    if (actions.length === 0) {
+      return NextResponse.json({ error: 'AI generated an empty test plan.' }, { status: 400 });
+    }
 
     // 2. Batch Execution Phase
     let executionLogs = '';
-    for (let i = 0; i < plan.actions.length; i++) {
-      const step = plan.actions[i];
+    for (let i = 0; i < actions.length; i++) {
+      const step = actions[i];
       
       // 4. Send script to the internal broker running on the same server
       const port = process.env.PORT || 3000;
@@ -103,8 +113,8 @@ WARNING: You must properly escape all internal double quotes inside string value
         attempts++;
       }
 
-      if (!finalReq || finalReq.status === 'PENDING') {
-        return NextResponse.json({ error: `Agent did not respond to action ${i+1} in time.` }, { status: 408 });
+      if (!finalReq || finalReq.status === 'PENDING' || finalReq.status === 'REQUESTED') {
+        return NextResponse.json({ error: `Agent did not respond to action ${i+1} in time. Did you press 'y' in the terminal?` }, { status: 408 });
       }
 
       if (finalReq.status === 'DENIED') {
