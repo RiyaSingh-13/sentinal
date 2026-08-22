@@ -6,9 +6,11 @@ export default function AgentConnection({ projectId }) {
   const [status, setStatus] = useState({ isConnected: false, session: null });
   const [loadingReq, setLoadingReq] = useState(false);
   const [host, setHost] = useState('localhost:3000');
+  const [protocol, setProtocol] = useState('http:');
 
   useEffect(() => {
     setHost(window.location.host);
+    setProtocol(window.location.protocol);
 
     const fetchStatus = async () => {
       try {
@@ -88,7 +90,7 @@ export default function AgentConnection({ projectId }) {
           <div style={{ backgroundColor: '#000', padding: '1.25rem', borderRadius: '6px', border: '1px solid var(--surface-border)', position: 'relative' }}>
             <span style={{ position: 'absolute', top: '-10px', left: '12px', backgroundColor: 'var(--surface)', padding: '0 8px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', border: '1px solid var(--surface-border)', borderRadius: '4px' }}>Zero-Dependency Bootstrapper</span>
             <code style={{ color: 'var(--foreground)', userSelect: 'all', display: 'block', wordBreak: 'break-all', fontSize: '0.85rem', fontFamily: 'monospace' }}>
-              node -e "fetch('http://{host}/api/bootstrapper?projectId={projectId}&baseUrl=http://{host}&wsUrl=ws://{host}').then(r=&gt;r.text()).then(t=&gt;eval(t))"
+              node -e "fetch('{protocol}//{host}/api/bootstrapper?projectId={projectId}&baseUrl={protocol}//{host}&wsUrl={protocol === 'https:' ? 'wss:' : 'ws:'}//{host}/agent').then(r=&gt;r.text()).then(t=&gt;eval(t))"
             </code>
           </div>
           
