@@ -5,14 +5,17 @@ import { useState, useEffect } from 'react';
 export default function AgentConnection({ projectId }) {
   const [status, setStatus] = useState({ isConnected: false, session: null });
   const [loadingReq, setLoadingReq] = useState(false);
+  const [customHost, setCustomHost] = useState('');
   const [host, setHost] = useState('');
   const [protocol, setProtocol] = useState('http:');
-  const [customHost, setCustomHost] = useState('');
+  const targetHost = customHost ? (customHost.includes(':') ? customHost : customHost + ':3000') : host;
+  const bootstrapCommand = `node -e "fetch('${protocol}//${targetHost}/api/bootstrapper/${projectId}').then(r => r.text()).then(t => eval(t))"`;
 
   useEffect(() => {
-    let currentHost = window.location.host;
-    setHost(currentHost);
-    setProtocol(window.location.protocol);
+    const locationUpdate = setTimeout(() => {
+      setHost(window.location.host);
+      setProtocol(window.location.protocol);
+    }, 0);
 
     const fetchStatus = async () => {
       try {
@@ -28,7 +31,10 @@ export default function AgentConnection({ projectId }) {
     
     fetchStatus();
     const interval = setInterval(fetchStatus, 2000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(locationUpdate);
+      clearInterval(interval);
+    };
   }, [projectId]);
 
   const requestCapability = async (capability, reason) => {
@@ -101,14 +107,14 @@ export default function AgentConnection({ projectId }) {
           </div>
 
           <div style={{ backgroundColor: '#000', padding: '1.25rem', borderRadius: '6px', border: '1px solid var(--surface-border)', position: 'relative' }}>
-            <span style={{ position: 'absolute', top: '-10px', left: '12px', backgroundColor: 'var(--surface)', padding: '0 8px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', border: '1px solid var(--surface-border)', borderRadius: '4px' }}>Zero-Dependency Bootstrapper</span>
+            <span style={{ position: 'absolute', top: '-10px', left: '12px', backgroundColor: 'var(--surface)', padding: '0 8px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', border: '1px solid var(--surface-border)', borderRadius: '4px' }}>Secure Bootstrapper</span>
             <code style={{ color: 'var(--foreground)', userSelect: 'all', display: 'block', wordBreak: 'break-all', fontSize: '0.85rem', fontFamily: 'monospace' }}>
-              node -e "fetch('{protocol}//{customHost ? (customHost.includes(':') ? customHost : customHost + ':3000') : host}/api/bootstrapper/{projectId}').then(r=&gt;r.text()).then(t=&gt;eval(t))"
+              {bootstrapCommand}
             </code>
           </div>
           
           <p style={{ fontSize: '0.85rem', color: 'var(--muted-text)', marginTop: '1rem' }}>
-            This command will autonomously download the Agent, install its dependencies in a secure temp folder, and connect back to this UI.
+            This command downloads the Agent, reuses an existing <code>ws</code> dependency when available, and connects back to this UI.
           </p>
         </div>
       )}

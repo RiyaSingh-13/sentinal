@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
+import { callGroq } from '@/../lib/groq/client';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL_NAME = 'gemini-3.6-flash';
+const MODEL_NAME = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 export async function POST(request) {
   try {
@@ -28,13 +29,25 @@ ${report}
 Write the simplified version in clean HTML format. Use tags like <h2>, <ul>, <li>, and <p>. Do NOT use markdown.
 `;
 
-    const response = await ai.models.generateContent({
-      model: MODEL_NAME,
-      contents: prompt,
-      config: { temperature: 0.5 }
-    });
+    let simplified = '';
+    try {
+      const response = await ai.models.generateContent({
+        model: MODEL_NAME,
+        contents: prompt,
+        config: { temperature: 0.5 }
+      });
+      simplified = response.text || '';
+    } catch (geminiError) {
+      console.warn('Gemini simplify report failed; attempting Groq fallback:', geminiError.message);
+      simplified = await callGroq(
+        'You are a helpful AI assistant. Output only clean HTML tags with no markdown backticks.',
+        prompt,
+        false
+      );
+    }
 
-    return NextResponse.json({ success: true, simplified: response.text });
+    simplified = simplified.replace(/^```(?:html)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    return NextResponse.json({ success: true, simplified });
   } catch (error) {
     console.error('Simplify Report API Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

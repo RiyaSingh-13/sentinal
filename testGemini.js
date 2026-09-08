@@ -1,4 +1,4 @@
-
+require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const { GoogleGenAI } = require('@google/genai');
 
@@ -29,7 +29,7 @@ ${JSON.stringify(profile)}
   console.log('Sending request to Gemini...');
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
       contents: prompt,
       config: {
         temperature: 0.2,

@@ -5,7 +5,7 @@ import { callGroq } from '@/../lib/groq/client';
 
 const prisma = new PrismaClient();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL_NAME = 'gemini-3.6-flash';
+const MODEL_NAME = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 export async function POST(request) {
   try {
@@ -65,13 +65,24 @@ WARNING: You must properly escape all internal double quotes inside string value
 }
 `;
 
-    const planRes = await ai.models.generateContent({
-      model: MODEL_NAME,
-      contents: planPrompt,
-      config: { temperature: 0.1, responseMimeType: "application/json" }
-    });
+    let planText = '';
+    try {
+      const planRes = await ai.models.generateContent({
+        model: MODEL_NAME,
+        contents: planPrompt,
+        config: { temperature: 0.1, responseMimeType: "application/json" }
+      });
+      planText = planRes.text || '';
+    } catch (geminiError) {
+      console.warn('Gemini test plan failed; attempting Groq fallback:', geminiError.message);
+      planText = await callGroq(
+        'You are the Sentinel Batch Execution Planner. Return ONLY valid JSON matching the schema.',
+        planPrompt,
+        true
+      );
+    }
     
-    let planText = (planRes.text || '').replace(/```json/gi, '').replace(/```/g, '').trim();
+    planText = (planText || '').replace(/```json/gi, '').replace(/```/g, '').trim();
     let plan = {};
     try {
       plan = JSON.parse(planText);

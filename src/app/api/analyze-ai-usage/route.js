@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { GoogleGenAI } from '@google/genai';
+import { callGroq } from '@/../lib/groq/client';
 
 const prisma = new PrismaClient();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL_NAME = 'gemini-3.6-flash';
+const MODEL_NAME = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 export async function POST(request) {
   try {
@@ -57,14 +58,32 @@ Format:
 }
 `;
 
-    const response = await ai.models.generateContent({
-      model: MODEL_NAME,
-      contents: prompt,
-      config: { temperature: 0.2, responseMimeType: "application/json" }
-    });
+    let text = '';
+    try {
+      const response = await ai.models.generateContent({
+        model: MODEL_NAME,
+        contents: prompt,
+        config: { temperature: 0.2, responseMimeType: "application/json" }
+      });
+      text = response.text || '';
+    } catch (geminiError) {
+      console.warn('Gemini analyze AI usage failed; attempting Groq fallback:', geminiError.message);
+      text = await callGroq(
+        'You are an expert AI Code Forensics Analyzer. Respond ONLY with valid JSON matching the schema.',
+        prompt,
+        true
+      );
+    }
 
-    const text = (response.text || '').replace(/```json/gi, '').replace(/```/g, '').trim();
-    const data = JSON.parse(text);
+    const cleanText = (text || '').replace(/```json/gi, '').replace(/```/g, '').trim();
+    let data;
+    try {
+      data = JSON.parse(cleanText);
+    } catch (err) {
+      const match = cleanText.match(/\{[\s\S]*\}/);
+      if (match) data = JSON.parse(match[0]);
+      else throw err;
+    }
 
     return NextResponse.json(data);
   } catch (error) {
