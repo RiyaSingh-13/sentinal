@@ -53,7 +53,8 @@ RUN npx playwright install chromium
 # Copy remaining source code
 COPY . .
 
-# Generate Prisma Client & prepare database
+# Set database URL and generate Prisma Client & prepare database
+ENV DATABASE_URL="file:./dev.db"
 RUN npx prisma generate
 RUN npx prisma db push
 
